@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avisos Consultorio</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: background-color 0.4s ease;
+      overflow: hidden;
+    }
+    body.alerta-activa {
+      background-color: #0284c7;
+    }
+    .contenedor {
+      max-width: 90%;
+      padding: 3rem;
+      border-radius: 24px;
+      background: rgba(30, 41, 59, 0.7);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      border: 2px solid #334155;
+    }
+    .etiqueta {
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+    }
+    .nombre-paciente {
+      font-size: 5rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 1rem 0;
+      line-height: 1.1;
+    }
+    .consultorio {
+      font-size: 2.2rem;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+    .hora {
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      color: #cbd5e1;
+    }
+    #btn-audio {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      background-color: #10b981;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #btn-audio.activo {
+      background-color: #334155;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="contenedor">
+    <div class="etiqueta">Llamado a Consulta</div>
+    <div class="nombre-paciente" id="paciente">En espera...</div>
+    <div class="consultorio" id="consultorio">Consultorio</div>
+    <div class="hora" id="hora"></div>
+  </div>
+
+  <button id="btn-audio" onclick="activarAudio()">🔔 Activar Sonido de Alerta</button>
+
+  <script>
+    let audioCtx = null;
+
+    // Los navegadores exigen un clic del usuario para permitir sonido automático
+    function activarAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      reproducirTimbre();
+      const btn = document.getElementById('btn-audio');
+      btn.textContent = '🔊 Sonido Activado';
+      btn.classList.add('activo');
+    }
+
+    // Genera un timbre doble agradable (tipo aeropuerto/clínica) sin archivos MP3
+    function reproducirTimbre() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      
+      // Primera nota (Mi5)
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.4, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.6);
+
+      // Segunda nota (Do5)
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(523.25, now + 0.35);
+      gain2.gain.setValueAtTime(0.4, now + 0.35);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.35);
+      osc2.stop(now + 1.2);
+    }
+
+    // Conexión en tiempo real con el servidor en Render
+    const eventSource = new EventSource('/events');
+
+    eventSource.onmessage = function(event) {
+      const datos = JSON.parse(event.data);
+      
+      document.getElementById('paciente').textContent = datos.paciente;
+      document.getElementById('consultorio').textContent = datos.consultorio;
+      document.getElementById('hora').textContent = `Llamado a las ${datos.hora}`;
+
+      // Efecto visual de parpadeo
+      document.body.classList.add('alerta-activa');
+      setTimeout(() => {
+        document.body.classList.remove('alerta-activa');
+      }, 4000);
+
+      // Sonar timbre
+      reproducirTimbre();
+    };
+  </script>
+</body>
+</html>
