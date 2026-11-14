@@ -1,4 +1,4 @@
- const express = require('express');
+const express = require('express');
 const path = require('path');
 const app = express();
 
@@ -41,6 +41,7 @@ app.post('/', (req, res) => {
     'Consultorio Dr. Benjamín';
 
   ultimoLlamado = {
+    hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
     paciente: paciente,
     consultorio: consultorio,
     hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
