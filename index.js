@@ -29,14 +29,15 @@ app.post('/', (req, res) => {
   console.log('Webhook recibido:', JSON.stringify(payload));
 
   const paciente = 
+    payload?.pacienteNombre || 
+    payload?.data?.pacienteNombre || 
     payload?.data?.paciente?.nombre_completo || 
-    payload?.data?.paciente_nombre || 
     payload?.paciente || 
     'Paciente en turno';
 
   const consultorio = 
-    payload?.data?.consultorio || 
     payload?.consultorio || 
+    payload?.data?.consultorio || 
     'Consultorio Dr. Benjamín';
 
   ultimoLlamado = {
