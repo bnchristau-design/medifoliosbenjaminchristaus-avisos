@@ -1,22 +1,58 @@
-const http = require('http');
+ const express = require('express');
+const path = require('path');
+const app = express();
 
-const server = http.createServer((req, res) => {
-  if (req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      console.log("¡Recibí un aviso de Medifolios!:", body);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'Recibido con éxito' }));
-    });
-  } else {
-    res.writeHead(404);
-    res.end();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+let clients = [];
+let ultimoLlamado = null;
+
+app.get('/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  if (ultimoLlamado) {
+    res.write(`data: ${JSON.stringify(ultimoLlamado)}\n\n`);
   }
+
+  clients.push(res);
+
+  req.on('close', () => {
+    clients = clients.filter(client => client !== res);
+  });
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log('Servidor escuchando...');
+app.post('/', (req, res) => {
+  const payload = req.body;
+  console.log('Webhook recibido:', JSON.stringify(payload));
+
+  const paciente = 
+    payload?.data?.paciente?.nombre_completo || 
+    payload?.data?.paciente_nombre || 
+    payload?.paciente || 
+    'Paciente en turno';
+
+  const consultorio = 
+    payload?.data?.consultorio || 
+    payload?.consultorio || 
+    'Consultorio Dr. Benjamín';
+
+  ultimoLlamado = {
+    paciente: paciente,
+    consultorio: consultorio,
+    hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+  };
+
+  clients.forEach(client => {
+    client.write(`data: ${JSON.stringify(ultimoLlamado)}\n\n`);
+  });
+
+  res.status(200).json({ status: 'Recibido con éxito' });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor de avisos activo en puerto ${PORT}`);
 });
