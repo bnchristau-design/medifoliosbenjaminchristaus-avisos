@@ -40,12 +40,17 @@ app.post('/', (req, res) => {
     payload?.data?.consultorio || 
     'Consultorio Dr. Benjamín';
 
-  ultimoLlamado = {
-    hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-    paciente: paciente,
-    consultorio: consultorio,
-    hora: new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-  };
+ultimollamado = { 
+  paciente: paciente,
+  consultorio: consultorio,
+  hora: new Date().toLocaleTimeString('es-CO', { 
+    timeZone: 'America/Bogota', 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true 
+  })
+};
+    
 
   clients.forEach(client => {
     client.write(`data: ${JSON.stringify(ultimoLlamado)}\n\n`);
